@@ -11,19 +11,44 @@
 
 ### Artigos
 
-- [ ] [Top 5 Reasons to Use GraphQL](https://www.prisma.io/blog/top-5-reasons-to-use-graphql-b60cfa683511)
+- [x] [Top 5 Reasons to Use GraphQL](https://www.prisma.io/blog/top-5-reasons-to-use-graphql-b60cfa683511)
 - [ ] [React.js Conf 2015 - Data fetching for React applications at Facebook](https://www.youtube.com/watch?v=9sc8Pyc51uU)
-- [ ] [Netflix Falcor](https://github.com/Netflix/falcor)
 - [ ] [Lessons From 4 Years of GraphQL](https://www.graphql.com/articles/4-years-of-graphql-lee-byron)
 - [ ] [GraphQL SDL — Schema Definition Language](https://www.prisma.io/blog/graphql-sdl-schema-definition-language-6755bcb9ce51)
 - [ ] [GraphQL Server Basics: GraphQL Schemas, TypeDefs & Resolvers Explained](https://www.prisma.io/blog/graphql-server-basics-the-schema-ac5e2950214e)
 - [ ] [GraphQL Server Basics: The Network Layer](https://www.prisma.io/blog/graphql-server-basics-the-network-layer-51d97d21861)
 - [ ] [GraphQL Server Basics: Demystifying the info Argument in GraphQL Resolvers](https://www.prisma.io/blog/graphql-server-basics-demystifying-the-info-argument-in-graphql-resolvers-6f26249f613a)
+- [x] [Greenfield Project](https://en.wikipedia.org/wiki/Greenfield_project)
+- [ ] [Começando com fetch no Javascript](https://blog.alura.com.br/comecando-com-fetch-no-javascript/)
+- [ ] [Introduction to fetch(   )](https://developers.google.com/web/updates/2015/03/introduction-to-fetch)
+- [ ] [High-order components](https://reactjs.org/docs/higher-order-components.html)
+- [ ] [Functional reactive programming](https://en.wikipedia.org/wiki/Functional_reactive_programming)
+- [ ] [GraphQL concepts visualized](https://blog.apollographql.com/the-concepts-of-graphql-bc68bd819be3)
 
+### Palestras e Vídeos
 
-### Ferramentas
+- [ ] [React.js Conf 2015 - Data fetching for React applications at Facebook](https://www.youtube.com/watch?v=9sc8Pyc51uU)
+
+- [ ] [GraphQL - The Documentary](https://www.youtube.com/watch?v=783ccP__No8)
+
+- [ ] [REST vs GraphQL : Critical Look](https://www.youtube.com/watch?v=yLf0rIaRtRc)
+
+- [ ] [GraphQL, Array e impedindo que a tela desligue com JS](https://www.youtube.com/watch?v=vtbyOxmrMpk)]
+
+- [ ] [Dan Schafer - GraphQL at Facebook at react-europe 2016](https://www.youtube.com/watch?v=etax3aEe2dA)
+
+- [ ] [Robert Zhu - Realtime React Apps with GraphQL - React Conf 2017](https://www.youtube.com/watch?v=AYbVMNtO-ro)
+
+- [ ] [Lessons from 4 Years of GraphQL](https://www.youtube.com/watch?v=zVNrqo9XGOs)
+
+### Ferramentas e Recursos
 
 - [graphql-up](https://www.npmjs.com/package/graphql-up)
+- [How to GraphQL choose tutorial](https://www.howtographql.com/choose/)
+- [Build a GraphQL server from scratch](https://www.prisma.io/docs/tutorials/-nahgaghei6)
+- [Netflix Falcor](https://github.com/Netflix/falcor)
+
+
 ### Introduction
 
 - O GraphQL é um novo padrão de API inventado pelo Facebook, que oferece uma alternativa mais poderosa e robusta ao padrão REST.
@@ -226,3 +251,123 @@ subscription {
 ```
 
 Dessa forma o servidor vai enviar para o cliente informações sempre que um evento desse tipo ocorrer, algo semelhante a um streaming de dados. Isso varia bastante do modelo `request-response` encontrado no REST.
+
+### Big Picture (Architecture)
+
+Na verdade o GraphQL nasceu como uma especificação, o longo documento de texto que descreve como um cliente e uma servidor deveriam se comportar.
+
+Existem três casos de uso principais para o GraphQL:
+1. Um servidor GraphQL conectado a um banco de dados
+2. Um servidor GraphQL integrado a um sistema existente
+3. Um híbrido dos dois casos
+
+#### Caso de uso 1
+
+- Bastante presente em greenfield projects (Um projeto totalmente novo, sem código legado)
+- Utiliza um servidor web que implementa a especificação
+- O servidor irá resolver a query e retornar a resposta para o cliente
+- O GraphQL é agnóstico quanto ao protocolo utilizado ou quanto ao banco de dados utilizado
+
+#### Caso de uso 2
+
+- Comum em projetos legados, ou que já possuem uma infraestrutura com diferentes APIs
+- Nesse caso o GraphQL pode ser usado para unificar sistemas existentes, escondendo a complexidade da manipulação dos dados
+- O servidor não se importa qual será a fonte dos dados (banco de dados, web services, 3rd party APIs, ...)
+
+#### Caso de uso 3
+- É a combinação dos dois casos
+
+
+#### Resolver Function
+O elemento principal do funcionamento do GraphQL é o conceito de **resolver functions**, através dele será possível recuperar os dados de **um determinado campo** seguindo uma lógica
+
+#### Diferenças entre data fetching imperativo e declarativo
+
+##### Imperativo
+1. Construímos e enviamos o request https
+2. Recebemos e parseamos a resposta do servidor
+3. Armazenamos localmente as informações
+4. Representamos essas informações na interface
+
+##### Declarativo
+1. Declaramos nossos requisitos de dados
+2. Representamos essas informações na interface
+
+Tudo que acontece entre o 1 e o 2 é de responsabilidade do cliente e do servidor GraphQL.
+
+### Advanced Tutorials - Client
+
+Infraestrutura que gostariamos de ter em um app qualquer:
+- Fazer queries e mutations sem ter que criar um request HTTP complexo
+- Integração com a camada de visualização
+- Estratégia de cache
+- Validar e otimizar queries baseado no nosso esquema
+
+Embora essas atividades possam ser feitas pelo desenvolvedor, o GraphQL facilita a abstração dessas tarefas, evitando excesso de trabalho manual, assim podemos focar no que realmente é importante.
+
+Existem atualmente dois clientes para o GraphQL:
+1. [Apollo Client](https://github.com/apollographql/apollo-client) : Uma alternativa open-source, mantida pela comunidade. Tem implementação para a maioria das plataformas de frontend
+2. [Relay Client](https://relay.dev): Cliente criado pelo Facebook, com diversas otimizações
+
+### Directly Sending Queries and Mutations
+
+Antigamente tinhamos que utilizar o `XMLHttpRequest` ou `fetch` para consumir algum recurso de uma API. Vamos delegar essa função para o GraphQL, iremos declarar nossos requisitos de dados através de uma query, e deixar que o sistema cuide do resto para nós. Essa será a tarefa do Cliente.
+
+### View layer integrations & UI updates
+
+Após solicitar os dados do servidor e recebermos a resposta, teremos de alguma forma apresentar esses dados na interface. Existirá bastante variação nas estratégias que cada framework. Os que mais se saem bem nessa tarefa são os frameworks que se apoiam no paradigma funcional reativo.
+
+
+
+### Caching query results: concepts and strategies
+
+Existem diversas estratégias de cacheamento, a mais simples seria colocar o resultado das queries em algum esquema de armazenamento, e caso essa query tente ser executada novamente, o conteudo cacheado será utilizado. O problema é que essa estratégia se torna bastante ineficiente com o tempo.
+
+Uma outra abordagem seria normalizar esses dados e utilizar um identificador global único para se refererir a esses elementos.
+
+### Advanced Tutorials - Server
+
+O GraphQL não descreve apenas um esquema e uma linguagem de consulta para esse esquema, mas também um algoritmo de como transformar a consulta em um resultado efetivo. O processo é o seguinte: A query é percorrida campo a campo, executando funções resolvers para cada campo.
+
+Considere o seguinte esquema:
+
+```
+type Query {
+  author(id: ID!): Author
+}
+
+type Author {
+  posts: [Post]
+}
+
+type Post {
+  title: String
+  content: String
+}
+```
+
+Com esse esquema definido, podemos mandar a seguinte query:
+```
+query {
+  author(id: "abc") {
+    posts {
+      title
+      content
+    }
+  }
+}
+```
+
+E cada campo está associado unicament a um tipo:
+```
+query: Query {
+  author(id: "abc"): Author {
+    posts: [Post] {
+      title: String
+      content: String
+    }
+  }
+}
+```
+
+Parei em "Now, we can easily find"
