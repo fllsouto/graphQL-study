@@ -1,13 +1,34 @@
-## How to GraphQL
+## How to GraphQL - Resumo
 
 - [Artigos](#artigos)
-- [Ferramentas](#ferramentas)
+- [Palestras e Vídeos](#palestras-e-videos)
+- [Ferramentas e Recursos](#ferramentas-e-recursos)
 - [Introduction](#introduction)
   * [Revisão histórica sobre o REST](#revisao-historica-sobre-o-rest)
 - [GraphQL vs REST - A comparasion](#graphql-vs-rest---a-comparasion)
   * [Blogging App with REST](#blogging-app-with-rest)
   * [Benefícios de um Schema & Types](#beneficios-de-um-schema--types)
 - [Core Concepts](#core-concepts)
+- [Big Picture (Architecture)](#big-picture-architecture)
+  * [Caso de uso 1](#caso-de-uso-1)
+  * [Caso de uso 2](#caso-de-uso-2)
+  * [Caso de uso 3](#caso-de-uso-3)
+  * [Resolver Function](#resolver-function)
+  * [Diferenças entre data fetching imperativo e declarativo](#diferencas-entre-data-fetching-imperativo-e-declarativo)
+    + [Imperativo](#imperativo)
+    + [Declarativo](#declarativo)
+- [Advanced Tutorials - Client](#advanced-tutorials---client)
+  * [Directly Sending Queries and Mutations](#directly-sending-queries-and-mutations)
+  * [View layer integrations & UI updates](#view-layer-integrations--ui-updates)
+  * [Caching query results: concepts and strategies](#caching-query-results-concepts-and-strategies)
+- [Advanced Tutorials - Server](#advanced-tutorials---server)
+  * [Batched Resolving](#batched-resolving)
+- [Advanced Tutorials - More GraphQL Concepts](#advanced-tutorials---more-graphql-concepts)
+  * [Enhancing Reusability with Fragments](#enhancing-reusability-with-fragments)
+  * [Advanced SDL](#advanced-sdl)
+- [Advanced Tutorials - Tooling and Ecosystem](#advanced-tutorials---tooling-and-ecosystem)
+- [Advanced Tutorials - Security](#advanced-tutorials---security)
+- [Advanced Tutorials - Common Questions](#advanced-tutorials---common-questions)
 
 ### Artigos
 
@@ -24,6 +45,10 @@
 - [ ] [High-order components](https://reactjs.org/docs/higher-order-components.html)
 - [ ] [Functional reactive programming](https://en.wikipedia.org/wiki/Functional_reactive_programming)
 - [ ] [GraphQL concepts visualized](https://blog.apollographql.com/the-concepts-of-graphql-bc68bd819be3)
+- [ ] [GraphQL explained - How GraphQL turns a query into a response](https://blog.apollographql.com/graphql-explained-5844742f195e)
+- [ ] [Busca em largura](https://pt.wikipedia.org/wiki/Busca_em_largura)
+- [ ] [React + Apollo Tutorial](https://www.howtographql.com/react-apollo/0-introduction/)
+- [ ] [GraphQL + NodeJs Tutorial](https://www.howtographql.com/graphql-js/0-introduction/)
 
 ### Palestras e Vídeos
 
@@ -47,6 +72,9 @@
 - [How to GraphQL choose tutorial](https://www.howtographql.com/choose/)
 - [Build a GraphQL server from scratch](https://www.prisma.io/docs/tutorials/-nahgaghei6)
 - [Netflix Falcor](https://github.com/Netflix/falcor)
+- [GraphQL Playground](https://github.com/prisma/graphql-playground)
+- [GraphiQL](https://github.com/graphql/graphiql)
+- [Dataloader](https://github.com/graphql/dataloader)
 
 
 ### Introduction
@@ -309,21 +337,23 @@ Existem atualmente dois clientes para o GraphQL:
 1. [Apollo Client](https://github.com/apollographql/apollo-client) : Uma alternativa open-source, mantida pela comunidade. Tem implementação para a maioria das plataformas de frontend
 2. [Relay Client](https://relay.dev): Cliente criado pelo Facebook, com diversas otimizações
 
-### Directly Sending Queries and Mutations
+#### Directly Sending Queries and Mutations
 
 Antigamente tinhamos que utilizar o `XMLHttpRequest` ou `fetch` para consumir algum recurso de uma API. Vamos delegar essa função para o GraphQL, iremos declarar nossos requisitos de dados através de uma query, e deixar que o sistema cuide do resto para nós. Essa será a tarefa do Cliente.
 
-### View layer integrations & UI updates
+#### View layer integrations & UI updates
 
 Após solicitar os dados do servidor e recebermos a resposta, teremos de alguma forma apresentar esses dados na interface. Existirá bastante variação nas estratégias que cada framework. Os que mais se saem bem nessa tarefa são os frameworks que se apoiam no paradigma funcional reativo.
 
 
 
-### Caching query results: concepts and strategies
+#### Caching query results: concepts and strategies
 
 Existem diversas estratégias de cacheamento, a mais simples seria colocar o resultado das queries em algum esquema de armazenamento, e caso essa query tente ser executada novamente, o conteudo cacheado será utilizado. O problema é que essa estratégia se torna bastante ineficiente com o tempo.
 
-Uma outra abordagem seria normalizar esses dados e utilizar um identificador global único para se refererir a esses elementos.
+Devido ao dinamismo das consultas que o cliente pode fazer, nada garante que o resultado que foi cacheado na primeira consulta será reutilizado em algum momento posterior. Teríamos que ter uma abordagem um pouco mais complexas, mas pensando que ainda teremos um ORM em alguma ponta da nossa estrutura, que já pode ter sua própria estratégia de cache, a ausência de uma estratégia direto no graphQL pode não ser tão problemática.
+
+Por fim, uma outra abordagem seria normalizar esses dados e utilizar um identificador global único para se refererir a esses elementos.
 
 ### Advanced Tutorials - Server
 
@@ -370,4 +400,206 @@ query: Query {
 }
 ```
 
-Parei em "Now, we can easily find"
+A resolução dessa query seguirá a ideia de Breadth-first (Busca em largura), resolvendo primeiro `Query.author`, pegando o resultado e passando para o resolver `Author.posts` . Seria algo semelhante a seguinte execução:
+
+```javascript
+Query.authors(root, {id: 'abc'}, context) -> author
+Author.posts(author, null, context) -> posts
+for each post in posts
+	Post.title(post, null, context) -> title
+	Post.content(post, null, context) -> content
+
+# Existem uma estrutura nesses resolvers:
+#
+# TipoPai.tipoFilho(raizDaBuscaTipPai, atributosTipoPai, contextoDaBusca) -> tipoFilho
+```
+
+Quando todas as resoluções são executadas os dados serão colocados em um resultado formatado e retornado.
+
+#### Batched Resolving
+
+Ao fazer uma consulta no nosso backend isso pode desencadear chamadas sucessivas para nosso banco de dados que serão iguais. Considere a seguinte query:
+
+```grahql
+query {
+	posts {
+		title
+		author {
+			name
+			avatar
+		}
+	}
+}
+```
+
+ Se um mesmo autor, com por exemplo`id = 1`, tiver mais de um post, iremos gerar várias buscas repetidas no banco:
+
+```javascript
+fetch('/authors/1')
+fetch('/authors/1')
+fetch('/authors/2')
+fetch('/authors/3')
+fetch('/authors/1')
+fetch('/authors/2')
+```
+
+A forma de evitar esse problema seria preparar todos os fetchs, colocando o ID dos autores em uma lista que não permite duplicidade. Isso permitiria que os registros fossem buscados apenas 1 vez cada.
+
+### Advanced Tutorials - More GraphQL Concepts
+
+#### Enhancing Reusability with Fragments 
+Fragmentos são são trechos do nosso sistema de tipos que podem ser reaproveitados, com o intuito de diminuir a quantidade de declarações que precisamos fazer. Um tipo `User` poderia ter um fragmento chamado `addressDetails`:
+
+```graphql
+type User {
+  name: String!
+  age: Int!
+  email: String!
+  street: String!
+  zipcode: String!
+  city: String!
+}
+
+fragment addressDetails on User {
+  name
+  street
+  zipcode
+  city
+}
+```
+
+Com isso podemos fazer uma query da seguinte forma:
+
+```
+{
+	allUsers {
+		addressDetails
+	}
+}
+# Em vez de
+{ 
+	allUsers {
+		name
+		street
+		zipcode
+		city
+	}
+}
+```
+
+Também podemos passar parâmetros para nossas queries durante a pesquisa:
+
+```graphql
+# Fazendo named query com parâmetros 
+{
+	moreThan10: allUsers(olderThan: 10): [Users!]!
+	moreThan20: allUsers(oltherThan: 20): [Users!]!
+}
+
+# Podemos te um valor default caso o campo não seja passado
+
+type Query{
+	allUsers(olderThan: Int = 16): [Users!]!
+}
+```
+
+#### Advanced SDL
+
+No GraphQL temos dois conjuntos de tipos que podemos usar para contruir no schema:
+
+1. Tipos escalares: Representam unidades concretas de dados. Podem ser: String, Int, Float, Boolean e ID
+2. Tipos objetos: São tipos compostos pela composição de objetos e escalares
+
+Existe ainda os conceitos de Enum e interfaces. No primeiro podemos representar tipos de dados fixos que estão definidos em um conjunto de valores, por exemplo:
+
+```graphql
+enum Months {
+	January
+	February
+	March
+	April
+	...
+}
+```
+
+No segundo podemos descrever um conjunto de tipos abstratos que devem estar presentes em um tipo concreto que implemente essa interface:
+
+```
+interface User {
+	id: ID!
+	email: String!
+}
+
+type Section {
+	name: String!
+}
+
+type Moderator implements User {
+	id: ID!
+	email: String!
+	sectionsToModerate: [Section!]!
+}
+```
+
+Além desses dois conceitos úteis para modelar nossos tipos, ainda temos as `union`, que nos permitem definir tipos concretos que podem ter um tipo interno opcional. Importante dizer que o graphQL **não possui um tipo Date** nativo. 
+
+
+
+### Advanced Tutorials - Tooling and Ecosystem
+
+O cliente tem a capacidade de perguntar para o servidor do GraphQL sobre sua estrutura interna, ou seja, requisitar metadados. Esse processo é conhecido com **introspecção**. Um exemplo disso é a seguinte query:
+
+```graphql
+query {
+  __schema {
+    types {
+      name
+    }
+  }
+}
+# E seu retorno
+{
+  "data": {
+    "__schema": {
+      "types": [
+        {
+          "name": "Query"
+        },
+        {
+          "name": "Author"
+        },
+        {
+          "name": "Post"
+        }
+        ...
+}
+```
+
+Esse tipo de funcionalidade é realmente muito útil, diversas ferramentas do ecossistema do graphQL fazem uso disso para gerar documentação, autocomplete, geração de código e etc. Dos exemplos de ferramentas que fazem intenso uso disso são o [GraphQL Playground](https://github.com/graphcool/graphql-playground) e o [GraphiQL](https://github.com/graphql/graphiql/blob/master/packages/graphiql#readme).
+
+.
+
+### Advanced Tutorials - Security
+
+Existem diversas estratégias para proteger nosso servidor GraphQL de queries maliciosas ou muito complexas.  Nenhuma das abordagem é infalível, algumas se apoiam em heurísticas básicas ou um conhecimento prévio da modelagem do sistema. A definição precisa de cada estratégia pode ser encontrada [aqui](https://www.howtographql.com/advanced/4-security/).
+
+Temos como possiveis estratégias:
+
+1. Timeout
+2. Limitar a profundidade máxima de cada query
+3. Atribuir pontuações quanto a complexidade de uma query
+4. Regulação manual do número de requisições (Throttling)
+   1. Baseado no tempo de execução no servidor
+   2. Baseado na complexidade da operação 
+
+O github utiliza essa abordagem para limitar as consultas na sua API pública feita com GraphQL. Mais sobre isso nesse [link](https://developer.github.com/v4/guides/resource-limitations/)
+
+### Advanced Tutorials - Common Questions
+
+Os principais pontos de atenção são:
+
+1. GraphQL é uma query language para API's, não para banco de dados.
+2. O GraphQL é agnostico quanto a tecnologias, ele não passa de uma especificação. A maioria das linguagens terão suas respectivas implementações da especificação.
+3. Server-side caching é muito complicado de manter, se comparado ao padrão REST. Isso se deve a capacidade que o endpoint tem de alterar a estrutura dos dados que serão devolvidos.
+4. É possível utilizar processos de autenticação e autorização junto com o GraphQL.
+5. Quando uma operação da errado um segundo root no json de resposta será criado, com o nome de `errors`.
