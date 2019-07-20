@@ -1,0 +1,3 @@
+[submodule "agenda-petshop"]
+	path = agenda-petshop
+	url = git@github.com:fllsouto/agenda-petshop.git
